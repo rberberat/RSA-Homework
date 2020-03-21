@@ -15,9 +15,33 @@ public class RSA {
 
     public static void main(String[] args){
         RSA rsa = new RSA();
-        rsa.generateNewKeyPair();
-        rsa.encodeTextFile();
         rsa.decodeTextFile();
+    }
+
+    private BigInteger encode(BigInteger message){
+        return this.fastExponentiation(message, e, n);
+    }
+
+    private BigInteger decode(BigInteger encrypted){
+        return this.fastExponentiation(encrypted, d, n);
+    }
+
+    private BigInteger fastExponentiation(BigInteger x, BigInteger e, BigInteger m){
+        BigInteger i, h, k;
+
+        String[] binaryStringArray = e.toString(2).split("");
+        i = BigInteger.valueOf(binaryStringArray.length - 1);
+        h = BigInteger.ONE;
+        k = x;
+
+        while (i.compareTo(BigInteger.ZERO) >= 0){
+            if(binaryStringArray[i.intValue()].equals("1")){
+                h = h.multiply(k).mod(m);
+            }
+            k = k.multiply(k).mod(m);
+            i = i.subtract(BigInteger.ONE);
+        };
+        return h;
     }
 
     public void generateNewKeyPair(){
@@ -53,11 +77,11 @@ public class RSA {
             }
         }
 
-        writeToFile(FILE_ROOT_PATH + "chiffre1.txt", sb.toString());
+        writeToFile(FILE_ROOT_PATH + "chiffre.txt", sb.toString());
     }
 
     public void decodeTextFile(){
-        String file = readFromTextFile(FILE_ROOT_PATH + "chiffre1.txt");
+        String file = readFromTextFile(FILE_ROOT_PATH + "chiffre.txt");
         String privateKey = readFromTextFile(FILE_ROOT_PATH + "sk.txt");
         parsePrivateKeyString(privateKey);
 
@@ -70,9 +94,8 @@ public class RSA {
         }
 
         StringBuilder sb = new StringBuilder();
-        Iterator<Character> iter = chars.iterator();
-        while(iter.hasNext()){
-            sb.append(iter.next().toString());
+        for (Character aChar : chars) {
+            sb.append(aChar.toString());
         }
 
         writeToFile(FILE_ROOT_PATH + "test-d.txt", sb.toString());
@@ -140,14 +163,6 @@ public class RSA {
         return values;
     }
 
-    private BigInteger encode(BigInteger message){
-        return message.modPow(e, n);
-    }
-
-    private BigInteger decode(BigInteger encrypted){
-        return encrypted.modPow(d, n);
-    }
-
     private void parsePrivateKeyString(String sk){
         sk = sk.substring(1, sk.length()-1);
         String[] array = sk.split(",");
@@ -166,16 +181,6 @@ public class RSA {
 
     }
 
-    private String readFromTextFile(String path) {
-        try {
-            return Files.readString(Paths.get(path));
-        } catch (IOException e){
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
     private void writePrivateKeyFile(){
         String sk = String.format("(%d,%d)", this.n, this.d);
         String path = FILE_ROOT_PATH + "sk.txt";
@@ -188,6 +193,17 @@ public class RSA {
         writeToFile(path, pk);
     }
 
+    private String readFromTextFile(String path) {
+        try {
+            return Files.readString(Paths.get(path));
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    //
     private void writeToFile(String path, String content) {
         try {
             Path outPath = Paths.get(path);
